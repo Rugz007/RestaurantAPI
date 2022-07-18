@@ -57,6 +57,7 @@ class CustomerViewSet(viewsets.ViewSet):
                     table.fk_customer = customer
                     table.save()
                     table_list.append(table.table_no)
+                return Response({"message": "Tables assigned", "table_list": table_list,'customer_id':customer.id}, status=http_status.HTTP_200_OK)
             except:
                 return Response({"message": "Not enough tables available"}, status=http_status.HTTP_404_NOT_FOUND)
         
