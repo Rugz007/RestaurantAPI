@@ -75,24 +75,7 @@ class CustomerViewSet(viewsets.ViewSet):
             {"message": "Invalid Data!", "error": serializer.errors}, status=http_status.HTTP_400_BAD_REQUEST
         )
 
-    @swagger_auto_schema()
-    def gets_meals(self, request, customer_id):
-        """
-        Endpoint to get all meals
-        """
-        try:
-            customer = Customer.objects.get(id=customer_id)
-        except Customer.DoesNotExist:
-            return Response({"message": "Invalid Customer Id"}, status=http_status.HTTP_404_NOT_FOUND)
-        orders = OrderedMeal.objects.filter(fk_customer=customer, is_ready=True, is_served=False)
-        if len(orders) == 0:
-            return Response({"message": "No meal available"}, status=http_status.HTTP_404_NOT_FOUND)
-        else:
-            for order in orders:
-                order.is_served = True
-                order.save()
-        serialized = MealSerializer(orders, many=True)
-        return Response({"message": "Meals Served!", "orders": serialized.data}, status=http_status.HTTP_200_OK)
+   
 
     @swagger_auto_schema(request_body=OrderSerializer)
     def return_meal(self, request):
@@ -146,14 +129,14 @@ class CustomerViewSet(viewsets.ViewSet):
     @swagger_auto_schema()
     def generate_invoice(self, request, customer_id):
         """
-        Endpoint to generate invoice for a customer
+        Endpoint to generate invoice for a customer and get meals
         """
         try:
             customer = Customer.objects.get(id=customer_id)
         except Customer.DoesNotExist:
             return Response({"message": "Invalid Customer Id"}, status=http_status.HTTP_404_NOT_FOUND)
-        if OrderedMeal.objects.filter(fk_customer=customer, is_ready=True, is_served=False).count() == 0:
-            ordered_meals = OrderedMeal.objects.filter(fk_customer=customer, is_proper=True)
+        if OrderedMeal.objects.filter(fk_customer=customer, is_ready=False).count() != 0:
+            ordered_meals = OrderedMeal.objects.filter(fk_customer=customer, is_proper=True,is_served = False)
             if len(ordered_meals) == 0:
                 return Response({"message": "No meal to generate invoice"}, status=http_status.HTTP_404_NOT_FOUND)
             tables = Table.objects.filter(fk_customer=customer)
@@ -164,11 +147,13 @@ class CustomerViewSet(viewsets.ViewSet):
             invoice = Invoice.objects.create(fk_customer=customer)
 
             for meal in ordered_meals:
+                meal.is_served = True
                 invoice.total_amount += meal.fk_meal.price
+            serialized = OrderSerializer(ordered_meals, many=True)
             invoice.is_paid = True
             invoice.save()
             return Response(
-                {"message": "Invoice Generated", "invoice_id": invoice.id, "amount": invoice.total_amount},
+                {"message": "Invoice Generated", "invoice_id": invoice.id, "amount": invoice.total_amount, 'meals':serialized.data},
                 status=http_status.HTTP_200_OK,
             )
         else:
