@@ -8,6 +8,7 @@ The assignment is to implement a back-end which emulates a self service restaura
  - Containerized application using Docker.
  - Async API calls using Celery with RabbitMQ as a message broker.
  - API Endpoints for ordering food, collecting food, generating invoice, assigning tables to customers and returning foods.
+ - Rest of working in WORKING.md
 ## Built With
 
 - [Django REST Framework](https://www.django-rest-framework.org)
@@ -24,8 +25,8 @@ The assignment is to implement a back-end which emulates a self service restaura
 1. Clone this repository and change directory.
 
 ```bash
-git clone https://github.com/Rugz007/ResturantAPI.git
-cd ResturantAPI
+git clone https://github.com/Rugz007/RestaurantAPI.git
+cd RestaurantAPI
 ```
 2. Run the following command to **build** all the containers
 ```bash
