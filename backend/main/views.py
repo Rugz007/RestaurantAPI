@@ -42,35 +42,24 @@ class CustomerViewSet(viewsets.ViewSet):
         serializer = CustomerSerializer(data=request.data)
         if serializer.is_valid():
             table_list = []
-            if serializer.validated_data.get("number_of_people") > 4:
-                tables_required = math.ceil(serializer.validated_data.get("number_of_people") / 4)
+            tables_required = math.ceil(serializer.validated_data.get("number_of_people") / 4)
+            try:
+                tables = Table.objects.filter(is_occupied=False).order_by("table_no")
+                if len(tables) < tables_required:
+                    return Response({"message": "Not enough tables"}, status=http_status.HTTP_400_BAD_REQUEST)
+                tables = tables[:tables_required]
                 try:
-                    tables = Table.objects.filter(is_occupied=False).order_by("table_no")
-                    if len(tables) < tables_required:
-                        return Response({"message": "Not enough tables"}, status=http_status.HTTP_400_BAD_REQUEST)
-                    tables = tables[:tables_required]
-                    try:
-                        customer = Customer.objects.get(phone_no=serializer.validated_data.get("phone_no"))
-                    except:
-                        customer = serializer.save()
-                    for table in tables:
-                        table.is_occupied = True
-                        table.fk_customer = customer
-                        table.save()
-                        table_list.append(table.table_no)
+                    customer = Customer.objects.get(phone_no=serializer.validated_data.get("phone_no"))
                 except:
-                    return Response({"message": "Not enough tables available"}, status=http_status.HTTP_404_NOT_FOUND)
-            else:
-                try:
-                    table = Table.objects.get(is_occupied=False)
                     customer = serializer.save()
+                for table in tables:
                     table.is_occupied = True
                     table.fk_customer = customer
                     table.save()
                     table_list.append(table.table_no)
-                except Table.DoesNotExist:
-                    return Response({"message": "No table available"}, status=http_status.HTTP_404_NOT_FOUND)
-            return Response({"message": "Table Assigned!",'tables':table_list}, status=http_status.HTTP_200_OK)
+            except:
+                return Response({"message": "Not enough tables available"}, status=http_status.HTTP_404_NOT_FOUND)
+        
         return Response(
             {"message": "Invalid Data!", "error": serializer.errors}, status=http_status.HTTP_400_BAD_REQUEST
         )
@@ -135,11 +124,13 @@ class CustomerViewSet(viewsets.ViewSet):
             customer = Customer.objects.get(id=customer_id)
         except Customer.DoesNotExist:
             return Response({"message": "Invalid Customer Id"}, status=http_status.HTTP_404_NOT_FOUND)
-        if OrderedMeal.objects.filter(fk_customer=customer, is_ready=False).count() != 0:
+        if OrderedMeal.objects.filter(fk_customer=customer, is_ready=False).count() == 0:
             ordered_meals = OrderedMeal.objects.filter(fk_customer=customer, is_proper=True,is_served = False)
             if len(ordered_meals) == 0:
                 return Response({"message": "No meal to generate invoice"}, status=http_status.HTTP_404_NOT_FOUND)
             tables = Table.objects.filter(fk_customer=customer)
+            if len(tables) == 0:
+                return Response({"message": "Customer is not on any table"}, status=http_status.HTTP_404_NOT_FOUND)
             for table in tables:
                 table.is_occupied = False
                 table.fk_customer = None
@@ -148,8 +139,9 @@ class CustomerViewSet(viewsets.ViewSet):
 
             for meal in ordered_meals:
                 meal.is_served = True
+                meal.save()
                 invoice.total_amount += meal.fk_meal.price
-            serialized = OrderSerializer(ordered_meals, many=True)
+            serialized = MealSerializer(ordered_meals, many=True)
             invoice.is_paid = True
             invoice.save()
             return Response(
