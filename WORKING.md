@@ -18,9 +18,26 @@ The restaurant app currently works as a self-service restaurant, which means tha
 ## Working
 ### Steps
 1. Customer will be assigned a table/tables [ `/api/customer/table/assign`]
+ex: Use this in request body 
+`{
+  "name": "Rugved",
+  "phone_no": 43242,
+  "number_of_people": 3
+}`
 2. Customer will order any number of meals [`/api/customer/order`]
+ex. Use this in request body
+
+{
+
+      {
+	      "customer_id": "INSERT UUID GENERATED",
+      "meal_list": [
+        "1","2"
+      ]
+    }
+
 3. A celery worker will be assigned to 'cook' the meals. [A celery worker represents a chef to emulate behaviour]
-4. Once the order is ready after sometime, the customer will have to collect the food with invoice ready. [`/api/customer/id/invoice`]
+4. Once the order is ready after sometime, the customer will have to collect the food with invoice ready. [`/api/customer/UUID/invoice`]
 
 ### Corner cases which are not implemented
 1. Wrong table
