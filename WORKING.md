@@ -17,6 +17,8 @@ The restaurant app currently works as a self-service restaurant, which means tha
 
 ## Working
 ### Steps
+1. Run docker compose as stated in README.md
+1. Open `localhost:8000/swagger` to access API documentation to test API
 1. Customer will be assigned a table/tables [ `/api/customer/table/assign`]
 ex: Use this in request body 
 `{
